@@ -2,40 +2,13 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
-
+#include "shader.h"
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-const char *vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout (location = 1) in vec3 aColor;\n"
-"out vec3 ourColor;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos, 1.0);\n"
-"   ourColor = aColor;\n"
-"}\0";
-const char *fragmentShaderSourceOrange = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"in vec3 ourColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(ourColor, 1.0f);\n"
-"}\n\0";
-
-const char *fragmentShaderSourceRandomColor = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"uniform vec4 ourColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = ourColor;\n"
-"}\n\0";
-
-
 
 int main()
 {
@@ -69,75 +42,6 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-
-
-    // build and compile our shader program
-    // ------------------------------------
-    // vertex shader
-    int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // orange fragment shader
-    int orangeShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(orangeShader, 1, &fragmentShaderSourceOrange, NULL);
-    glCompileShader(orangeShader);
-    // check for shader compile errors
-    glGetShaderiv(orangeShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(orangeShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // yellow shader
-    int randomShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(randomShader, 1, &fragmentShaderSourceRandomColor, NULL);
-    glCompileShader(randomShader);
-    // check for shader compile errors
-    glGetShaderiv(randomShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(randomShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::YELLOW_FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // link shaders
-    int orangeShaderProgram = glCreateProgram();
-    glAttachShader(orangeShaderProgram, vertexShader);
-    glAttachShader(orangeShaderProgram, orangeShader);
-
-    glLinkProgram(orangeShaderProgram);
-    // check for linking errors
-    glGetProgramiv(orangeShaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(orangeShaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(orangeShader);
-    
-
-    // link shaders
-    int randomShaderProgram = glCreateProgram();
-    glAttachShader(randomShaderProgram, vertexShader);
-    glAttachShader(randomShaderProgram, randomShader);
-    //glAttachShader(shaderProgram, yellowShader);
-    glLinkProgram(randomShaderProgram);
-    // check for linking errors
-    glGetProgramiv(randomShaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(randomShaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(randomShader);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -199,6 +103,9 @@ int main()
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     // render loop
     // -----------
+    Shader multiColor{ Shader("shaders/multicolor.vs", "shaders/vertex_color_based.fs") };
+    Shader flickering{ Shader("shaders/multicolor.vs", "shaders/green_flickering.fs") };
+
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -211,16 +118,16 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw our first triangle
-        glUseProgram(orangeShaderProgram);
+        multiColor.use();
         glBindVertexArray(VAO1); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawArrays(GL_TRIANGLES, 0, 3);
         // glBindVertexArray(0); // no need to unbind it every time 
 
 
-        glUseProgram(randomShaderProgram);
+        flickering.use();
         float timeValue = glfwGetTime();
         float greenValue = (sin(timeValue) / 2 + 0.5f);
-        int vertexColorLocation = glGetUniformLocation(randomShaderProgram, "ourColor");
+        int vertexColorLocation = glGetUniformLocation(flickering.ID, "ourColor");
         glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
         glBindVertexArray(VAO2); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawArrays(GL_TRIANGLES, 0, 3);
