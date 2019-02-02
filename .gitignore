@@ -1,0 +1,6 @@
+.vs
+Debug/*
+Release/*
+OpenGL_Project/Debug/*
+OpenGL_Project/OpenGL_Project.vcxproj.filters
+OpenGL_Project/OpenGL_Project.vcxproj.user
